@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LOX / LIN Conversion Calculator</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --panel-border: #2a3a4f;
+      --text: #e8eef6;
+      --muted: #8b9bb0;
+      --accent-lox: #3b82f6;
+      --accent-lox-dim: rgba(59, 130, 246, 0.15);
+      --accent-lin: #22c55e;
+      --accent-lin-dim: rgba(34, 197, 94, 0.15);
+      --input-bg: #0d1219;
+      --focus: #60a5fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(ellipse at top, #1a2740 0%, var(--bg) 55%);
+      color: var(--text);
+      padding: 24px 16px 48px;
+    }
+    .wrap {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 1.55rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+    .gas-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .gas-toggle button {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      color: var(--muted);
+      padding: 14px 12px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .gas-toggle button:hover { color: var(--text); }
+    .gas-toggle button.active-lox {
+      border-color: var(--accent-lox);
+      background: var(--accent-lox-dim);
+      color: #93c5fd;
+      box-shadow: 0 0 0 1px var(--accent-lox);
+    }
+    .gas-toggle button.active-lin {
+      border-color: var(--accent-lin);
+      background: var(--accent-lin-dim);
+      color: #86efac;
+      box-shadow: 0 0 0 1px var(--accent-lin);
+    }
+    .gas-toggle .sub {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      opacity: 0.75;
+      margin-top: 2px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 8px 16px 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+      margin-bottom: 16px;
+    }
+    .card-title {
+      margin: 8px 0 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .field {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 8px 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .field:last-of-type { border-bottom: none; }
+    .field label {
+      grid-column: 1 / -1;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .field input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1.35rem;
+      font-variant-numeric: tabular-nums;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus {
+      border-color: var(--focus);
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    }
+    .field input.source {
+      border-color: var(--focus);
+      background: rgba(96, 165, 250, 0.08);
+    }
+    .unit {
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding-bottom: 14px;
+      min-width: 72px;
+    }
+    .hint {
+      grid-column: 1 / -1;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: -4px;
+    }
+    .fill-note {
+      grid-column: 1 / -1;
+      font-size: 0.8rem;
+      color: #93c5fd;
+      margin-top: -2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .actions button {
+      flex: 1;
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: transparent;
+      color: var(--text);
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .actions button:hover { background: rgba(255,255,255,0.04); }
+    .factors {
+      margin-top: 4px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--panel-border);
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .factors strong { color: var(--text); font-weight: 600; }
+    .factors code {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.9em;
+      color: #cbd5e1;
+    }
+    footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    #cylinders-card.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>LOX / LIN Converter</h1>
+      <p>Enter any value — the rest update automatically. Gas volumes are SCF at 70°F, 1 atm.</p>
+    </header>
+
+    <div class="gas-toggle" role="tablist" aria-label="Product">
+      <button type="button" id="btn-lox" class="active-lox" aria-pressed="true">
+        Liquid Oxygen
+        <span class="sub">LOX · O₂</span>
+      </button>
+      <button type="button" id="btn-lin" aria-pressed="false">
+        Liquid Nitrogen
+        <span class="sub">LIN · N₂</span>
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label for="gallons">Liquid volume</label>
+        <input id="gallons" type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-key="gallons" />
+        <span class="unit">gallons</span>
+      </div>
+      <div class="field">
+        <label for="cf">Gas volume</label>
+        <input id="cf" type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-key="cf" />
+        <span class="unit">cf (SCF)</span>
+      </div>
+      <div class="field">
+        <label for="hundredCf">Hundreds of cubic feet</label>
+        <input id="hundredCf" type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-key="hundredCf" />
+        <span class="unit">× 100 cf</span>
+        <div class="hint">1 in this box = 100 SCF of gas</div>
+      </div>
+      <div class="field">
+        <label for="liters">Liquid volume</label>
+        <input id="liters" type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-key="liters" />
+        <span class="unit">liters</span>
+      </div>
+      <div class="field">
+        <label for="weight">Weight</label>
+        <input id="weight" type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-key="weight" />
+        <span class="unit">lb</span>
+      </div>
+      <div class="actions">
+        <button type="button" id="btn-clear">Clear all</button>
+      </div>
+    </div>
+
+    <div class="card" id="cylinders-card">
+      <div class="card-title">Oxygen cylinders</div>
+      <div class="field">
+        <label for="cyl220">220 cf cylinders</label>
+        <input id="cyl220" type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-key="cyl220" />
+        <span class="unit">cylinders</span>
+        <div class="hint">Enter a count to size the fill, or read how many you can fill from the liquid above</div>
+        <div class="fill-note" id="note220"></div>
+      </div>
+      <div class="field">
+        <label for="cyl24">24 cf cylinders</label>
+        <input id="cyl24" type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-key="cyl24" />
+        <span class="unit">cylinders</span>
+        <div class="hint">Same as above — each size is calculated independently from the liquid on hand</div>
+        <div class="fill-note" id="note24"></div>
+      </div>
+    </div>
+
+    <div class="factors" id="factors"></div>
+    <footer>
+      Factors from Cryofab industrial conversion tables (liquid at NBP; gas at NTP 70°F / 1 atm).
+      Confirm against your plant SDS / vendor sheet for billing-critical work.
+    </footer>
+  </div>
+
+  <script>
+    const FACTORS = {
+      lox: {
+        name: "Liquid Oxygen (LOX)",
+        lbPerGal: 9.528,
+        scfPerGal: 115.1,
+        LPerGal: 3.785,
+      },
+      lin: {
+        name: "Liquid Nitrogen (LIN)",
+        lbPerGal: 6.747,
+        scfPerGal: 93.11,
+        LPerGal: 3.785,
+      },
+    };
+
+    const CYL = {
+      cyl220: 220,
+      cyl24: 24,
+    };
+
+    let gas = "lox";
+    let updating = false;
+    let sourceKey = null;
+
+    const inputs = {
+      gallons: document.getElementById("gallons"),
+      cf: document.getElementById("cf"),
+      hundredCf: document.getElementById("hundredCf"),
+      liters: document.getElementById("liters"),
+      weight: document.getElementById("weight"),
+      cyl220: document.getElementById("cyl220"),
+      cyl24: document.getElementById("cyl24"),
+    };
+
+    function fmt(n) {
+      if (!Number.isFinite(n)) return "";
+      const abs = Math.abs(n);
+      let digits;
+      if (abs === 0) digits = 0;
+      else if (abs >= 1000) digits = 1;
+      else if (abs >= 100) digits = 2;
+      else if (abs >= 10) digits = 3;
+      else digits = 4;
+      const s = n.toFixed(digits);
+      return s.replace(/\.?0+$/, "") || "0";
+    }
+
+    function parseNum(raw) {
+      if (raw == null) return NaN;
+      const cleaned = String(raw).trim().replace(/,/g, "");
+      if (cleaned === "" || cleaned === "." || cleaned === "-" || cleaned === "-.") return NaN;
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    function gallonsFrom(key, value) {
+      const f = FACTORS[gas];
+      switch (key) {
+        case "gallons": return value;
+        case "cf": return value / f.scfPerGal;
+        case "hundredCf": return (value * 100) / f.scfPerGal;
+        case "liters": return value / f.LPerGal;
+        case "weight": return value / f.lbPerGal;
+        case "cyl220": return (value * CYL.cyl220) / f.scfPerGal;
+        case "cyl24": return (value * CYL.cyl24) / f.scfPerGal;
+        default: return NaN;
+      }
+    }
+
+    function fillNote(scfTotal, size) {
+      if (!Number.isFinite(scfTotal) || scfTotal < 0) return "";
+      const full = Math.floor(scfTotal / size + 1e-9);
+      const rem = scfTotal - full * size;
+      const remStr = rem < 0.05 ? "0" : fmt(rem);
+      if (full === 0 && rem < 0.05) return "Not enough for one full cylinder";
+      return `${full} full · ${remStr} cf left over`;
+    }
+
+    function fillFromGallons(gals, exceptKey) {
+      const f = FACTORS[gas];
+      const scf = gals * f.scfPerGal;
+      const vals = {
+        gallons: gals,
+        cf: scf,
+        hundredCf: scf / 100,
+        liters: gals * f.LPerGal,
+        weight: gals * f.lbPerGal,
+        cyl220: scf / CYL.cyl220,
+        cyl24: scf / CYL.cyl24,
+      };
+      updating = true;
+      for (const [key, el] of Object.entries(inputs)) {
+        if (key === "cyl220" || key === "cyl24") {
+          if (gas !== "lox") continue;
+        }
+        el.classList.toggle("source", key === exceptKey);
+        if (key === exceptKey) continue;
+        el.value = Number.isFinite(gals) ? fmt(vals[key]) : "";
+      }
+      updating = false;
+
+      const note220 = document.getElementById("note220");
+      const note24 = document.getElementById("note24");
+      if (gas === "lox" && Number.isFinite(gals)) {
+        note220.textContent = fillNote(scf, CYL.cyl220);
+        note24.textContent = fillNote(scf, CYL.cyl24);
+      } else {
+        note220.textContent = "";
+        note24.textContent = "";
+      }
+    }
+
+    function clearDerived(exceptKey) {
+      updating = true;
+      for (const [k, el] of Object.entries(inputs)) {
+        el.classList.remove("source");
+        if (k !== exceptKey) el.value = "";
+      }
+      updating = false;
+      document.getElementById("note220").textContent = "";
+      document.getElementById("note24").textContent = "";
+    }
+
+    function onInput(key) {
+      if (updating) return;
+      if ((key === "cyl220" || key === "cyl24") && gas !== "lox") return;
+      sourceKey = key;
+      const n = parseNum(inputs[key].value);
+      if (!Number.isFinite(n)) {
+        clearDerived(key);
+        return;
+      }
+      fillFromGallons(gallonsFrom(key, n), key);
+    }
+
+    function updateFactorsBlurb() {
+      const f = FACTORS[gas];
+      let html =
+        `<strong>${f.name}</strong> — per US gallon liquid:<br>` +
+        `<code>1 gal</code> = <code>${f.scfPerGal} SCF</code> = <code>${f.LPerGal} L</code> = <code>${f.lbPerGal} lb</code><br>` +
+        `<code>100 SCF</code> = <code>${fmt(100 / f.scfPerGal)} gal</code> = <code>${fmt((100 / f.scfPerGal) * f.lbPerGal)} lb</code>`;
+      if (gas === "lox") {
+        html += `<br><code>1 × 220 cf cyl</code> = <code>${fmt(220 / f.scfPerGal)} gal</code> · ` +
+          `<code>1 × 24 cf cyl</code> = <code>${fmt(24 / f.scfPerGal)} gal</code>`;
+      }
+      document.getElementById("factors").innerHTML = html;
+    }
+
+    function setGas(next) {
+      gas = next;
+      const btnLox = document.getElementById("btn-lox");
+      const btnLin = document.getElementById("btn-lin");
+      btnLox.classList.toggle("active-lox", gas === "lox");
+      btnLox.setAttribute("aria-pressed", gas === "lox" ? "true" : "false");
+      btnLin.classList.toggle("active-lin", gas === "lin");
+      btnLin.setAttribute("aria-pressed", gas === "lin" ? "true" : "false");
+      document.getElementById("cylinders-card").classList.toggle("hidden", gas !== "lox");
+      updateFactorsBlurb();
+
+      if (sourceKey === "cyl220" || sourceKey === "cyl24") {
+        if (gas !== "lox") {
+          sourceKey = "gallons";
+        }
+      }
+
+      if (sourceKey && inputs[sourceKey] && inputs[sourceKey].value.trim() !== "") {
+        onInput(sourceKey);
+      } else {
+        const order = ["gallons", "cf", "hundredCf", "liters", "weight", "cyl220", "cyl24"];
+        const found = order.find((k) => {
+          if ((k === "cyl220" || k === "cyl24") && gas !== "lox") return false;
+          return inputs[k] && inputs[k].value.trim() !== "";
+        });
+        if (found) onInput(found);
+        else {
+          document.getElementById("note220").textContent = "";
+          document.getElementById("note24").textContent = "";
+        }
+      }
+    }
+
+    for (const [key, el] of Object.entries(inputs)) {
+      el.addEventListener("input", () => onInput(key));
+      el.addEventListener("focus", () => el.select());
+    }
+
+    document.getElementById("btn-lox").addEventListener("click", () => setGas("lox"));
+    document.getElementById("btn-lin").addEventListener("click", () => setGas("lin"));
+    document.getElementById("btn-clear").addEventListener("click", () => {
+      sourceKey = null;
+      updating = true;
+      for (const el of Object.values(inputs)) {
+        el.value = "";
+        el.classList.remove("source");
+      }
+      updating = false;
+      document.getElementById("note220").textContent = "";
+      document.getElementById("note24").textContent = "";
+      inputs.gallons.focus();
+    });
+
+    updateFactorsBlurb();
+  </script>
+</body>
+</html>
